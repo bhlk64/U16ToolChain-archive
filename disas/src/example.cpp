@@ -5,13 +5,25 @@
 #include <string>
 #include <deque>
 #include <cstring>
+#include <cctype>
 #include <cstdint>
+#include <sstream>
 
 #define ip (totallen - length - buf.size())
 
 std::string tohex(int n, int len) {
     std::string retval = "";
     for (int x = 0; x < len; x++) {
+        retval = "0123456789ABCDEF"[n & 0xF] + retval;
+        n >>= 4;
+    }
+    return retval;
+}
+
+std::string tohex_trim(int n) {
+    std::string retval = "";
+    if (n == 0) return "0";
+    while (n > 0) {
         retval = "0123456789ABCDEF"[n & 0xF] + retval;
         n >>= 4;
     }
@@ -40,8 +52,18 @@ int main(int argc, char** argv) {
     }
 
     std::ifstream in {argv[1], std::ios_base::binary};
-    in.seekg(std::stoi(argv[2], nullptr, 0));
-    int length = std::stoi(argv[3], nullptr, 0), l1, i, totallen = length;
+    std::size_t pos = 0;
+    int start_pos = std::stoi(argv[2], &pos, 0);
+    if (pos != std::strlen(argv[2])) {
+        start_pos = std::stoi(argv[2], nullptr, 16);
+    }
+    in.seekg(start_pos);
+    pos = 0;
+    int length = std::stoi(argv[3], &pos, 0);
+    if (pos != std::strlen(argv[3])) {
+        length = std::stoi(argv[3], nullptr, 16);
+    }
+    int l1, i, totallen = length;
     std::ofstream out {argv[4]};
     std::deque<std::uint8_t> buf {};
     char* readbuf = new char[0x10000];

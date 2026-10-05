@@ -23,7 +23,7 @@ std::string signedtohex(int n, int binlen) {
 }
 
 std::string cond [16] = {"GE", "LT", "GT", "LE", "GES", "LTS", "GTS", "LES",
-		"NE", "EQ", "NV", "OV", "PS", "NS", "AL", "<Unrecognized>"};
+		"NE", "EQ", "NV", "OV", "PS", "NS", "AL", "<UNRECOGNIZED>"};
 
 *
 {} 4 2
@@ -58,40 +58,40 @@ dddd1111 10010000 DSR<-   R{d}
 ; It affect C and OV flag differently.
 
 mmmm0001 1000nnnn ADD     R{n}, R{m}
-iiiiiiii 0001nnnn ADD     R{n}, #{i}
+iiiiiiii 0001nnnn ADD     R{n}, #{tohex_trim(i)}h
 mmm00110 1111nnn0 ADD     ER{n*2}, ER{m*2}
-1iiiiiii 1110nnn0 ADD     ER{n*2}, #{i << 25 >> 25}
+1iiiiiii 1110nnn0 ADD     ER{n*2}, #{signedtohex(i, 7)}h
 mmmm0110 1000nnnn ADDC    R{n}, R{m}
-iiiiiiii 0110nnnn ADDC    R{n}, #{i}
+iiiiiiii 0110nnnn ADDC    R{n}, #{tohex_trim(i)}h
 mmmm0010 1000nnnn AND     R{n}, R{m}
-iiiiiiii 0010nnnn AND     R{n}, #{i}
+iiiiiiii 0010nnnn AND     R{n}, #{tohex_trim(i)}h
 mmmm0111 1000nnnn CMP     R{n}, R{m}
-iiiiiiii 0111nnnn CMP     R{n}, #{i}
+iiiiiiii 0111nnnn CMP     R{n}, #{tohex_trim(i)}h
 mmmm0101 1000nnnn CMPC    R{n}, R{m}
-iiiiiiii 0101nnnn CMPC    R{n}, #{i}
+iiiiiiii 0101nnnn CMPC    R{n}, #{tohex_trim(i)}h
 mmm00101 1111nnn0 MOV     ER{n*2}, ER{m*2}
-0iiiiiii 1110nnn0 MOV     ER{n*2}, #{i}
+0iiiiiii 1110nnn0 MOV     ER{n*2}, #{tohex_trim(i)}h
 mmmm0000 1000nnnn MOV     R{n}, R{m}
-iiiiiiii 0000nnnn MOV     R{n}, #{i}
+iiiiiiii 0000nnnn MOV     R{n}, #{tohex_trim(i)}h
 mmmm0011 1000nnnn OR      R{n}, R{m}
-iiiiiiii 0011nnnn OR      R{n}, #{i}
+iiiiiiii 0011nnnn OR      R{n}, #{tohex_trim(i)}h
 mmmm0100 1000nnnn XOR     R{n}, R{m}
-iiiiiiii 0100nnnn XOR     R{n}, #{i}
+iiiiiiii 0100nnnn XOR     R{n}, #{tohex_trim(i)}h
 mmm00111 1111nnn0 CMP     ER{n*2}, ER{m*2}
 mmmm1000 1000nnnn SUB     R{n}, R{m}
 mmmm1001 1000nnnn SUBC    R{n}, R{m}
 
 ; ----------- Shift Instructions -----------
 mmmm1010 1000nnnn SLL     R{n}, R{m}
-0www1010 1001nnnn SLL     R{n}, #{w}
+0www1010 1001nnnn SLL     R{n}, #{tohex_trim(w)}h
 mmmm1011 1000nnnn SLLC    R{n}, R{m}
-0www1011 1001nnnn SLLC    R{n}, #{w}
+0www1011 1001nnnn SLLC    R{n}, #{tohex_trim(w)}h
 mmmm1110 1000nnnn SRA     R{n}, R{m}
-0www1110 1001nnnn SRA     R{n}, #{w}
+0www1110 1001nnnn SRA     R{n}, #{tohex_trim(w)}h
 mmmm1100 1000nnnn SRL     R{n}, R{m}
-0www1100 1001nnnn SRL     R{n}, #{w}
+0www1100 1001nnnn SRL     R{n}, #{tohex_trim(w)}h
 mmmm1101 1000nnnn SRLC    R{n}, R{m}
-0www1101 1001nnnn SRLC    R{n}, #{w}
+0www1101 1001nnnn SRLC    R{n}, #{tohex_trim(w)}h
 
 ; ----------- Load/Store Instructions (2 bytes) -----------
 
@@ -149,7 +149,7 @@ mmmm1100 10100000 MOV     EPSW, R{m}
 00000101 1010nnn0 MOV     ER{n*2}, ELR
 00011010 1010nnn0 MOV     ER{n*2}, SP
 mmmm1011 10100000 MOV     PSW, R{m}
-iiiiiiii 11101001 MOV     PSW, #{i} 
+iiiiiiii 11101001 MOV     PSW, #{tohex_trim(i)}h 
 ; #imm8 = #unsigned8
 
 00000111 1010nnnn MOV     R{n}, ECSR
@@ -232,7 +232,7 @@ mmm01010 11110000 LEA     [ER{m*2}]
 11001111 11111110 CPLC
 
 ; ----------- Conditional Relative Branch Instructions -----------
-rrrrrrrr 1100cccc BC      {cond[c]}, {tohex(2 + pc + ((int)(signed char)r << 1), 4+1)}h
+rrrrrrrr 1100cccc {c == 15 ? std::string("BC <UNRECOGNIZED>, ") : "B" + cond[c] + " "}{tohex_trim((2 + pc + ((int)(signed char)r << 1)) >> 16)}:{tohex((2 + pc + ((int)(signed char)r << 1)) & 0xFFFF, 4)}H
 
 ; nextPC = (2 + pc).
 
@@ -245,7 +245,7 @@ rrrrrrrr 1100cccc BC      {cond[c]}, {tohex(2 + pc + ((int)(signed char)r << 1),
 nnn01111 1000mmm1 {m == n ? "" : "Wrong format - "}EXTBW   ER{n*2}
 
 ; ----------- Software Interrupt Instructions -----------
-00iiiiii 11100101 SWI     #{i}
+00iiiiii 11100101 SWI     #{tohex_trim(i)}h
 11111111 11111111 BRK
 
 
@@ -294,8 +294,8 @@ mmm01011 11110000 DDDDDDDD EEEEEEEE LEA     {signedtohex(E*256+D, 16)}h[ER{m*2}]
 
 ; ----------- Branch Instructions -----------
 
-00000000 1111gggg CCCCCCCC DDDDDDDD B       0{tohex(g, 1)}h:0{tohex(D*256+C, 4)}h
-00000001 1111gggg CCCCCCCC DDDDDDDD BL      0{tohex(g, 1)}h:0{tohex(D*256+C, 4)}h
+00000000 1111gggg CCCCCCCC DDDDDDDD B       {tohex_trim(g)}:{tohex(D*256+C, 4)}h
+00000001 1111gggg CCCCCCCC DDDDDDDD BL      {tohex_trim(g)}:{tohex(D*256+C, 4)}h
 
 *
 ^ That (second) "star" denote the end of the file, so later
